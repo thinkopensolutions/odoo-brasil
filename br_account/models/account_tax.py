@@ -306,8 +306,8 @@ class AccountTax(models.Model):
         total_included = total_excluded = price_base
         for tax in taxes:
             tax_id = self.filtered(lambda x: x.id == tax['id'])
-            if not tax_id.price_include:
-                total_included += tax['amount']
+            if tax_id.tax_discount:
+                total_excluded -= tax['amount']
 
         return {
             'taxes': sorted(taxes, key=lambda k: k['sequence']),
