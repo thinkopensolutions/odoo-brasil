@@ -28,20 +28,3 @@ class AccountInvoice(models.Model):
             docs.ids, 'br_nfse.main_template_br_nfse_danfe')
         action['report_type'] = 'qweb-html'
         return action
-
-class AccountInvoiceLine(models.Model):
-    _inherit = "account.invoice.line"
-
-    @api.onchange('product_id')
-    def _onchange_product_id(self):
-        if self.invoice_id.type == 'out_invoice':
-            self.is_cust_invoice = True  
-            self.is_supp_invoice = False
-        if self.invoice_id.type == 'in_invoice':
-            if self.product_id:
-                self.is_cust_invoice = False  
-                self.is_supp_invoice = True
-        return super(AccountInvoiceLine, self)._onchange_product_id()
-        
-    is_cust_invoice = fields.Boolean(string='Is Customer Invoice', default=False)
-    is_supp_invoice = fields.Boolean(string='Is Supplier Invoice', default=False)
