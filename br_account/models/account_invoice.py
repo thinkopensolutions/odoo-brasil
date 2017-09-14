@@ -212,8 +212,6 @@ class AccountInvoice(models.Model):
         digits=dp.get_precision('Account'),
         compute='_compute_amount')
 
-    is_cust_invoice = fields.Boolean(string='Is Customer Invoice', default=False)
-
     @api.onchange('issuer')
     def _onchange_issuer(self):
         if self.issuer == '0' and self.type in (u'in_invoice', u'in_refund'):
