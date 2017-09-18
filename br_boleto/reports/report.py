@@ -33,7 +33,8 @@ class ReportCustom(report_int):
 
         active_ids = context.get('active_ids')
         active_model = context.get('origin_model')
-
+        if not active_model:
+            active_model = context.get('active_model', None)
         ids_move_lines = []
         aml_obj = env['account.move.line']
         if active_model == 'account.invoice':
