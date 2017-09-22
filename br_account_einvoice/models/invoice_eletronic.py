@@ -155,6 +155,9 @@ class InvoiceEletronic(models.Model):
         string=u"Base de Cálculo CSLL", readonly=True, states=STATE)
     valor_retencao_csll = fields.Monetary(
         string=u"Retenção CSLL", readonly=True, states=STATE)
+    valor_retencao_previdencia = fields.Monetary(
+        string=u"Retenção Prev.", help=u"Retenção Previdência Social",
+        readonly=True, states=STATE)
     valor_bc_inss = fields.Monetary(
         string=u"Base de Cálculo INSS", readonly=True, states=STATE)
     valor_retencao_inss = fields.Monetary(
