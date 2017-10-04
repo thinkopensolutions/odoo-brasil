@@ -23,7 +23,6 @@
                                     <field name="outras_despesas" />
                                     <field name="valor_liquido" />
                                     <field name="indicador_total" />
-                                    <field name="item_pedido_compra" />
                                 </group>
                                 <group>
                                     <field name="tipo_produto" />
@@ -71,28 +70,6 @@
                                 <field name="issqn_aliquota"/>
                                 <field name="issqn_codigo" />
                                 <field name="issqn_valor"/>
-                                <field name="issqn_valor_retencao"/>
-                            </group>
-                        </page>
-                        <page name="retencoes" string="Retenções" attrs="{'invisible': [('tipo_produto','!=', 'service')]}">
-                            <group>
-                                <group string="CSLL">
-                                    <field name="csll_base_calculo"/>
-                                    <field name="csll_aliquota"/>
-                                    <field name="csll_valor_retencao"/>
-                                </group>
-                                <group string="IRRF">
-                                    <field name="irrf_base_calculo"/>
-                                    <field name="irrf_aliquota"/>
-                                    <field name="irrf_valor_retencao"/>
-                                </group>
-                            </group>
-                            <group>
-                                <group string="INSS">
-                                    <field name="inss_base_calculo"/>
-                                    <field name="inss_aliquota"/>
-                                    <field name="inss_valor_retencao"/>
-                                </group>
                             </group>
                         </page>
                         <page name="ipi" string="IPI">
@@ -118,7 +95,6 @@
                                     <field name="pis_base_calculo"/>
                                     <field name="pis_aliquota"/>
                                     <field name="pis_valor"/>
-                                    <field name="pis_valor_retencao" attrs="{'invisible': [('tipo_produto','!=', 'service')]}"/>
                                 </group>
                             </group>
 
@@ -132,7 +108,6 @@
                                     <field name="cofins_base_calculo"/>
                                     <field name="cofins_aliquota"/>
                                     <field name="cofins_valor"/>
-                                    <field name="cofins_valor_retencao" attrs="{'invisible': [('tipo_produto','!=', 'service')]}"/>
                                 </group>
                             </group>
                         </page>
@@ -195,11 +170,8 @@
                                         <field name="company_id"/>
                                         <field name="currency_id" invisible="1"/>
                                         <field name="serie"/>
-                                        <field name="serie_documento"/>
                                         <field name="numero"/>
                                         <field name="numero_controle"/>
-                                        <field name="xml_to_send_name" invisible="1"/>
-                                        <field name="xml_to_send" filename="xml_to_send_name"/>
                                     </group>
                                     <group>
                                         <field name="data_emissao"/>
@@ -260,12 +232,9 @@
                                         <field name="valor_retencao_issqn" />
                                         <field name="valor_retencao_pis" />
                                         <field name="valor_retencao_cofins" />
-                                        <field name="valor_bc_irrf" />
                                         <field name="valor_retencao_irrf" />
-                                        <field name="valor_bc_csll" />
                                         <field name="valor_retencao_csll" />
-                                        <field name="valor_bc_inss" />
-                                        <field name="valor_retencao_inss" />
+                                        <field name="valor_retencao_previdencia" />
                                     </group>
                                 </group>
                             </page>
