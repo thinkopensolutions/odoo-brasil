@@ -155,9 +155,6 @@ class InvoiceEletronic(models.Model):
         string=u"Base de Cálculo CSLL", readonly=True, states=STATE)
     valor_retencao_csll = fields.Monetary(
         string=u"Retenção CSLL", readonly=True, states=STATE)
-    valor_retencao_previdencia = fields.Monetary(
-        string=u"Retenção Prev.", help=u"Retenção Previdência Social",
-        readonly=True, states=STATE)
     valor_bc_inss = fields.Monetary(
         string=u"Base de Cálculo INSS", readonly=True, states=STATE)
     valor_retencao_inss = fields.Monetary(
@@ -195,7 +192,7 @@ class InvoiceEletronic(models.Model):
         self.env['ir.attachment'].create(
             {
                 'name': file_name,
-                'datas': base64.b64encode(data),
+                'datas': base64.b64encode(data.encode()),
                 'datas_fname': file_name,
                 'description': u'',
                 'res_model': 'invoice.eletronic',
@@ -360,10 +357,8 @@ class InvoiceEletronic(models.Model):
             'max': max,
             'sum': sum,
             'filter': filter,
-            'reduce': reduce,
             'map': map,
             'round': round,
-            'cmp': cmp,
             # dateutil.relativedelta is an old-style class and cannot be
             # instanciated wihtin a jinja2 expression, so a lambda "proxy" is
             # is needed, apparently.
@@ -498,7 +493,7 @@ class InvoiceEletronicEvent(models.Model):
 class InvoiceEletronicItem(models.Model):
     _name = 'invoice.eletronic.item'
 
-    name = fields.Text(u'Nome', readonly=True, states=STATE)
+    name = fields.Char(u'Nome', size=100, readonly=True, states=STATE)
     company_id = fields.Many2one(
         'res.company', u'Empresa', index=True, readonly=True, states=STATE)
     invoice_eletronic_id = fields.Many2one(

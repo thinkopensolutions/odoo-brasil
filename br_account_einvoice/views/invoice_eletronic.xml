@@ -95,7 +95,7 @@
                                 </group>
                             </group>
                         </page>
-                        <page name="ipi" string="IPI">
+                        <page name="ipi" string="IPI" attrs="{'invisible': [('tipo_produto','==', 'service')]}">
                             <group string="Detalhes do IPI">
                                 <group>
                                     <field name="ipi_cst" />
@@ -136,7 +136,7 @@
                                 </group>
                             </group>
                         </page>
-                        <page name="ii" string="II">
+                        <page name="ii" string="II" attrs="{'invisible': [('tipo_produto','==', 'service')]}">
                             <group string="Detalhes do Imposto de Importação">
                                 <field name="ii_base_calculo"/>
                                 <field name="ii_aliquota"/>
