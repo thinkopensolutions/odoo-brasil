@@ -31,6 +31,7 @@ class AccountInvoice(models.Model):
     total_seguro = fields.Float(
         string='Seguro ( + )', digits=dp.get_precision('Account'),
         compute="_compute_amount")
+    issqn_retention =fields.Char("test")
     total_despesas = fields.Float(
         string='Despesas ( + )', digits=dp.get_precision('Account'),
         compute="_compute_amount")
