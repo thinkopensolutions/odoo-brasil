@@ -5,6 +5,10 @@
 from odoo import api, fields, models
 from odoo.addons import decimal_precision as dp
 
+class AccountInvoice(models.Model):
+    _inherit = 'account.invoice.line'
+
+    item_pedido_compra =fields.Char("test")
 
 class AccountInvoice(models.Model):
     _inherit = 'account.invoice'
