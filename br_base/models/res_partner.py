@@ -45,38 +45,36 @@ class ResPartner(models.Model):
          u'Já existe um parceiro cadastrado com este CPF/CNPJ!')
     ]
 
-    @api.v8
+    @api.multi
     def _display_address(self, without_company=False):
-        address = self
-
-        if address.country_id and address.country_id.code != 'BR':
+        if self.country_id and self.country_id.code != 'BR':
             # this ensure other localizations could do what they want
-            return super(ResPartner, self)._display_address(
-                without_company=False)
+            return super(ResPartner, self)._display_self(
+                without_company)
         else:
-            address_format = (
-                address.country_id and address.country_id.address_format or
-                "%(street)s\n%(street2)s\n%(city)s %(state_code)s"
-                "%(zip)s\n%(country_name)s")
+            address_format = self.country_id.address_format or \
+                  "%(street)s\n%(street2)s\n%(city)s %(state_code)s %(zip)s\n%(country_name)s\n%(l10n_br_city_name)s"
             args = {
-                'state_code': address.state_id and address.state_id.code or '',
-                'state_name': address.state_id and address.state_id.name or '',
-                'country_code': address.country_id and
-                address.country_id.code or '',
-                'country_name': address.country_id and
-                address.country_id.name or '',
-                'company_name': address.parent_id and
-                address.parent_id.name or '',
-                'city_name': address.city_id and
-                address.city_id.name or '',
+                'state_code': self.state_id and self.state_id.code or '',
+                'state_name': self.state_id and self.state_id.name or '',
+                'country_code': self.country_id and
+                self.country_id.code or '',
+                'country_name': self.country_id and
+                self.country_id.name or '',
+                'company_name': self.parent_id and
+                self.parent_id.name or '',
+                'city_name': self.city_id and
+                self.city_id.name or '',
             }
-            address_field = ['title', 'street', 'street2', 'zip', 'city',
-                             'number', 'district']
-            for field in address_field:
-                args[field] = getattr(address, field) or ''
+            # address_field = ['title', 'street', 'street2', 'zip', 'city',
+            #                  'number', 'district']
+            for field in self._address_fields():
+                args[field] = getattr(self, field) or ''
             if without_company:
                 args['company_name'] = ''
-            elif address.parent_id:
+            elif self.parent_id:
+                address_format = '%(company_name)s\n' + address_format
+            elif self.commercial_company_name:
                 address_format = '%(company_name)s\n' + address_format
             return address_format % args
 
