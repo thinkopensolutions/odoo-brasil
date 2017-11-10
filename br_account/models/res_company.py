@@ -23,7 +23,7 @@ class ResCompany(models.Model):
 
     document_serie_id = fields.Many2one(
         'br_account.document.serie', u'Série Fiscal',
-        domain="[('company_id', '=', active_id),('active','=',True),('state','=','document')]")
+        domain="[('company_id', '=', active_id),('active','=',True)]")
     annual_revenue = fields.Float(
         'Faturamento Anual', required=True,
         digits=dp.get_precision('Account'), default=0.00,
