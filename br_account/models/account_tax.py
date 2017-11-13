@@ -47,6 +47,9 @@ class AccountTaxTemplate(models.Model):
                                ('icms_inter', u'Difal - Alíquota Inter'),
                                ('icms_intra', u'Difal - Alíquota Intra'),
                                ('fcp', 'FCP'),
+                               ('csll', 'CSLL'),
+                               ('irrf', 'IRRF'),
+                               ('inss', 'INSS'),
                                ('outros', 'Outros')], string="Tipo")
     amount_type = fields.Selection(selection_add=[('icmsst', 'ICMS ST')])
 
@@ -77,6 +80,8 @@ class AccountTax(models.Model):
                                ('fcp', 'FCP'),
                                ('irpj', 'IRPJ'),
                                ('csll', 'CSLL'),
+                               ('irrf', 'IRRF'),
+                               ('inss', 'INSS'),
                                ('outros', 'Outros')], string="Tipo")
     amount_type = fields.Selection(selection_add=[('icmsst', 'ICMS ST')])
     tax_discount = fields.Boolean(string='Discount this Tax in Price',
@@ -128,7 +133,11 @@ class AccountTax(models.Model):
 
         base_tax = base_ipi * (1 - (reducao_ipi / 100.0))
         vals['amount'] = ipi_tax._compute_amount(base_tax, 1.0)
-        vals['base'] = base_tax
+        if 'ipi_base_calculo_manual' in self.env.context and\
+                self.env.context['ipi_base_calculo_manual'] > 0:
+            vals['base'] = self.env.context['ipi_base_calculo_manual']
+        else:
+            vals['base'] = base_tax
         return [vals]
 
     def _compute_icms(self, price_base, ipi_value):
@@ -154,8 +163,15 @@ class AccountTax(models.Model):
             base_icms += self.env.context["outras_despesas"]
 
         base_icms *= 1 - (reducao_icms / 100.0)
-        vals['amount'] = icms_tax._compute_amount(base_icms, 1.0)
-        vals['base'] = base_icms
+
+        if 'icms_base_calculo_manual' in self.env.context and\
+                self.env.context['icms_base_calculo_manual'] > 0:
+            vals['amount'] = icms_tax._compute_amount(
+                self.env.context['icms_base_calculo_manual'], 1.0)
+            vals['base'] = self.env.context['icms_base_calculo_manual']
+        else:
+            vals['amount'] = icms_tax._compute_amount(base_icms, 1.0)
+            vals['base'] = base_icms
         return [vals]
 
     def _compute_icms_st(self, price_base, ipi_value, icms_value):
@@ -189,11 +205,18 @@ class AccountTax(models.Model):
 
         base_icmsst *= 1 + aliquota_mva / 100.0  # Aplica MVA
 
-        icmsst = round(
-            (base_icmsst * (icmsst_tax.amount / 100.0)) - icms_value, 2)
-
-        vals['amount'] = icmsst if icmsst >= 0.0 else 0.0
-        vals['base'] = base_icmsst
+        if 'icms_st_base_calculo_manual' in self.env.context and\
+                self.env.context['icms_st_base_calculo_manual'] > 0:
+            icmsst = round(
+                (self.env.context['icms_st_base_calculo_manual'] *
+                 (icmsst_tax.amount / 100.0)) - icms_value, 2)
+            vals['amount'] = icmsst if icmsst >= 0.0 else 0.0
+            vals['base'] = self.env.context['icms_st_base_calculo_manual']
+        else:
+            icmsst = round(
+                (base_icmsst * (icmsst_tax.amount / 100.0)) - icms_value, 2)
+            vals['amount'] = icmsst if icmsst >= 0.0 else 0.0
+            vals['base'] = base_icmsst
         return [vals]
 
     def _compute_difal(self, price_base, ipi_value):
@@ -255,8 +278,25 @@ class AccountTax(models.Model):
         taxes = []
         for tax in pis_cofins_tax:
             vals = self._tax_vals(tax)
-            vals['amount'] = tax._compute_amount(price_base, 1.0)
-            vals['base'] = price_base
+            if tax.domain == 'pis':
+                if 'pis_base_calculo_manual' in self.env.context and\
+                        self.env.context['pis_base_calculo_manual'] > 0:
+                    vals['amount'] = tax._compute_amount(
+                        self.env.context['pis_base_calculo_manual'], 1.0)
+                    vals['base'] = self.env.context['pis_base_calculo_manual']
+                else:
+                    vals['amount'] = tax._compute_amount(price_base, 1.0)
+                    vals['base'] = price_base
+            if tax.domain == 'cofins':
+                if 'cofins_base_calculo_manual' in self.env.context and\
+                        self.env.context['cofins_base_calculo_manual'] > 0:
+                    vals['amount'] = tax._compute_amount(
+                        self.env.context['cofins_base_calculo_manual'], 1.0)
+                    vals['base'] = self.env.context[
+                        'cofins_base_calculo_manual']
+                else:
+                    vals['amount'] = tax._compute_amount(price_base, 1.0)
+                    vals['base'] = price_base
             taxes.append(vals)
         return taxes
 
@@ -265,6 +305,8 @@ class AccountTax(models.Model):
         if not ii_tax:
             return []
         vals = self._tax_vals(ii_tax)
+        if "ii_base_calculo" in self.env.context:
+            price_base = self.env.context["ii_base_calculo"]
         vals['amount'] = ii_tax._compute_amount(price_base, 1.0)
         vals['base'] = price_base
         return [vals]
@@ -295,6 +337,18 @@ class AccountTax(models.Model):
         vals['amount'] = csll_tax._compute_amount(price_base, 1.0)
         vals['base'] = price_base
         return [vals]
+    def _compute_retention(self, price_base):
+        retention_tax = self.filtered(
+            lambda x: x.domain in ('csll', 'irrf', 'inss'))
+        if not retention_tax:
+            return []
+        taxes = []
+        for tax in retention_tax:
+            vals = self._tax_vals(tax)
+            vals['amount'] = tax._compute_amount(price_base, 1.0)
+            vals['base'] = price_base
+            taxes.append(vals)
+        return taxes
 
     @api.multi
     def compute_all(self, price_unit, currency=None, quantity=1.0,
@@ -318,13 +372,15 @@ class AccountTax(models.Model):
             icms[0]['amount'] if icms else 0.0)
         difal = self._compute_difal(
             price_base, ipi[0]['amount'] if ipi else 0.0)
-        simples = self._compute_simples(price_base)
-        pis_cofins = self._compute_pis_cofins(price_base)
-        issqn = self._compute_issqn(price_base)
-        ii = self._compute_ii(price_base)
-        irpj = self._compute_irpj(price_base)
-        csll = self._compute_csll(price_base)
-        taxes = icms + icmsst + simples + difal + ipi + pis_cofins + issqn + ii + irpj + csll
+
+        taxes = icms + icmsst + difal + ipi
+        taxes += self._compute_simples(price_base)
+        taxes += self._compute_pis_cofins(price_base)
+        taxes += self._compute_issqn(price_base)
+        taxes += self._compute_ii(price_base)
+        taxes += self._compute_irpj(price_base)
+	taxes += self._compute_csll(price_base)
+        taxes += self._compute_retention(price_base)
 
         total_included = total_excluded = price_base
         for tax in taxes:

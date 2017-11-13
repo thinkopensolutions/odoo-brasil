@@ -189,10 +189,20 @@ class BoletoBradesco(Boleto):
         Boleto.__init__(self, move_line, nosso_numero)
         self.boleto.nosso_numero = self.nosso_numero
         self.boleto.valor = 0.0  # Não preencher
+        self.boleto.quantidade = ''
 
 
 class BoletoCaixa(Boleto):
-    pass
+    def __init__(self, move_line, nosso_numero):
+        self.boleto = Boleto.getBoletoClass(move_line)()
+        conta = move_line.payment_mode_id.bank_account_id
+        self.account_number = conta.acc_number
+        self.branch_number = conta.bra_number
+        # bank specific
+        self.account_digit = conta.acc_number_dig
+        # end bank specific
+        Boleto.__init__(self, move_line, nosso_numero)
+        self.boleto.nosso_numero = self.nosso_numero
 
 
 class BoletoCecred(Boleto):
