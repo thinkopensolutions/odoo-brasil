@@ -2,6 +2,7 @@
 # © 2016 Alessandro Fernandes Martini, Trustcode
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
+import base64
 from odoo import api, models
 from odoo.exceptions import UserError
 
@@ -10,47 +11,86 @@ class AccountInvoice(models.Model):
     _inherit = 'account.invoice'
 
     @api.multi
+    def send_email_boleto_queue(self):
+        mail = self.env.user.company_id.boleto_email_tmpl
+        if not mail:
+            raise UserError('Modelo de email padrão não configurado')
+
+        attachment_obj = self.env['ir.attachment']
+        for item in self:
+
+            atts = []
+            self = self.with_context({
+                'origin_model': 'account.invoice',
+                'active_ids': [item.id],
+            })
+            boleto, fmt = self.env['ir.actions.report.xml'].render_report(
+                [item.id], 'br_boleto.report.print', {'report_type': u'pdf'})
+
+            if boleto:
+                name = "boleto-%s-%s.pdf" % (
+                    item.number, item.partner_id.commercial_partner_id.name)
+                boleto_id = attachment_obj.create(dict(
+                    name=name,
+                    datas_fname=name,
+                    datas=base64.b64encode(boleto),
+                    mimetype='application/pdf',
+                    res_model='account.invoice',
+                    res_id=item.id,
+                ))
+                atts.append(boleto_id.id)
+
+            values = {
+                "attachment_ids": atts + mail.attachment_ids.ids
+            }
+            mail.send_mail(item.id, email_values=values)
+
+    @api.multi
     def invoice_validate(self):
         res = super(AccountInvoice, self).invoice_validate()
         error = ''
         for item in self:
             if item.payment_mode_id and item.payment_mode_id.boleto_type != '':
-                if not self.company_id.partner_id.legal_name:
+                if not item.company_id.partner_id.legal_name:
                     error += u'Empresa - Razão Social\n'
-                if not self.company_id.cnpj_cpf:
+                if not item.company_id.cnpj_cpf:
                     error += u'Empresa - CNPJ\n'
-                if not self.company_id.district:
+                if not item.company_id.district:
                     error += u'Empresa - Bairro\n'
-                if not self.company_id.zip:
+                if not item.company_id.zip:
                     error += u'Empresa - CEP\n'
-                if not self.company_id.city_id.name:
+                if not item.company_id.city_id.name:
                     error += u'Empresa - Cidade\n'
-                if not self.company_id.street:
+                if not item.company_id.street:
                     error += u'Empresa - Logradouro\n'
-                if not self.company_id.number:
+                if not item.company_id.number:
                     error += u'Empresa - Número\n'
-                if not self.company_id.state_id.code:
+                if not item.company_id.state_id.code:
                     error += u'Empresa - Estado\n'
 
-                if not self.commercial_partner_id.name:
+                if not item.commercial_partner_id.name:
                     error += u'Cliente - Nome\n'
-                if self.commercial_partner_id.is_company and \
-                   not self.commercial_partner_id.legal_name:
+                if item.commercial_partner_id.is_company and \
+                   not item.commercial_partner_id.legal_name:
                     error += u'Cliente - Razão Social\n'
-                if not self.commercial_partner_id.cnpj_cpf:
+                if not item.commercial_partner_id.cnpj_cpf:
                     error += u'Cliente - CNPJ/CPF \n'
-                if not self.commercial_partner_id.district:
+                if not item.commercial_partner_id.district:
                     error += u'Cliente - Bairro\n'
-                if not self.commercial_partner_id.zip:
+                if not item.commercial_partner_id.zip:
                     error += u'Cliente - CEP\n'
-                if not self.commercial_partner_id.city_id.name:
+                if not item.commercial_partner_id.city_id.name:
                     error += u'Cliente - Cidade\n'
-                if not self.commercial_partner_id.street:
+                if not item.commercial_partner_id.street:
                     error += u'Cliente - Logradouro\n'
-                if not self.commercial_partner_id.number:
+                if not item.commercial_partner_id.number:
                     error += u'Cliente - Número\n'
-                if not self.commercial_partner_id.state_id.code:
+                if not item.commercial_partner_id.state_id.code:
                     error += u'Cliente - Estado\n'
+
+                if item.number and len(item.number) > 12:
+                    error += u'Numeração da fatura deve ser menor que 12 ' + \
+                        'caracteres quando usado boleto\n'
 
                 if len(error) > 0:
                     raise UserError(u"""Ação Bloqueada!
