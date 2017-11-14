@@ -212,14 +212,25 @@ class AccountInvoice(models.Model):
         vals['eletronic_item_ids'] = eletronic_items
         return vals
 
+    #  Emit Eletronic document when invoice is validated
     @api.multi
     def invoice_validate(self):
         res = super(AccountInvoice, self).invoice_validate()
         self.action_number()
         for item in self:
-            if item.is_eletronic and\
-                    (item.issuer == '1' or
-                     item.type in ['out_invoice', 'out_refund']):
+            if item.is_eletronic and item.company_id.issue_eletronic_doc == 'o':
+                edoc_vals = self._prepare_edoc_vals(item)
+                if edoc_vals:
+                    eletronic = self.env['invoice.eletronic'].create(edoc_vals)
+                    eletronic.validate_invoice()
+                    eletronic.action_post_validate()
+        return res
+    #  Emit Eletronic document when invoice is paid
+    @api.multi
+    def action_invoice_paid(self):
+        res = super(AccountInvoice, self).action_invoice_paid()
+        for item in self:
+            if item.is_eletronic and item.company_id.issue_eletronic_doc == 'p':
                 edoc_vals = self._prepare_edoc_vals(item)
                 if edoc_vals:
                     eletronic = self.env['invoice.eletronic'].create(edoc_vals)

@@ -22,9 +22,6 @@ except ImportError:
 
 
 class Cnab240(Cnab):
-    """
-
-    """
 
     def __init__(self):
         super(Cnab, self).__init__()
@@ -49,6 +46,12 @@ class Cnab240(Cnab):
         elif bank == '033':
             from .bancos.santander import Santander240
             return Santander240
+        elif bank == '104':
+            from .bancos.cef import Cef240
+            return Cef240
+        elif bank == '748':
+            from .bancos.sicredi import Sicredi240
+            return Sicredi240
         else:
             return Cnab240
 
@@ -60,11 +63,6 @@ class Cnab240(Cnab):
             return 1
 
     def _prepare_header(self):
-        """
-
-        :param:
-        :return:
-        """
         cnpj_cpf = re.sub('[^0-9]', '',
                           self.order.payment_mode_id.company_id.cnpj_cpf)
         cedente_conta_dv = self.order.payment_mode_id.bank_account_id. \
@@ -83,6 +81,8 @@ class Cnab240(Cnab):
             'cedente_conta': int(self.order.payment_mode_id.bank_account_id.
                                  acc_number),
             'cedente_conta_dv': cedente_conta_dv,
+            'cedente_convenio': self.order.payment_mode_id.bank_account_id.
+            codigo_convenio,
             'cedente_agencia_dv': self.order.payment_mode_id.
                 bank_account_id.bra_number_dig,
             'cedente_nome': self.order.payment_mode_id.company_id.legal_name,
@@ -127,10 +127,6 @@ class Cnab240(Cnab):
                       format or '')
 
     def _prepare_segmento(self, line):
-        """
-        :param line:
-        :return:
-        """
         prefixo, sulfixo = self.cep(line.partner_id.zip)
 
         # if not self.order.payment_mode_id.boleto_aceite == 'S':
@@ -159,7 +155,13 @@ class Cnab240(Cnab):
             'cedente_conta': int(self.order.payment_mode_id.bank_account_id.
                                  acc_number),
             'cedente_conta_dv': self.order.payment_mode_id.bank_account_id.
+<<<<<<< HEAD
                 acc_number_dig,
+=======
+            acc_number_dig,
+            'cedente_convenio': self.order.payment_mode_id.bank_account_id.
+            codigo_convenio,
+>>>>>>> 159db4db32cb1acfa0ca47dc50616253f6da05d5
             'cedente_agencia_dv': self.order.payment_mode_id.bank_account_id.
                 bra_number_dig,
             'cedente_agencia_conta_dv': int(self.order.payment_mode_id.
@@ -224,11 +226,6 @@ class Cnab240(Cnab):
         }
 
     def remessa(self, order):
-        """
-
-        :param order:
-        :return:
-        """
         cobrancasimples_valor_titulos = 0
 
         self.order = order

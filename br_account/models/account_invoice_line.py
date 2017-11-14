@@ -32,12 +32,18 @@ class AccountInvoiceLine(models.Model):
             'icms_st_aliquota_reducao_base':
             self.icms_st_aliquota_reducao_base,
             'icms_st_aliquota_deducao': self.icms_st_aliquota_deducao,
+            'icms_st_base_calculo_manual': self.icms_st_base_calculo_manual,
             'ipi_reducao_bc': self.ipi_reducao_bc,
             'icms_base_calculo': self.icms_base_calculo,
+            'icms_base_calculo_manual': self.icms_base_calculo_manual,
             'ipi_base_calculo': self.ipi_base_calculo,
+            'ipi_base_calculo_manual': self.ipi_base_calculo_manual,
             'pis_base_calculo': self.pis_base_calculo,
+            'pis_base_calculo_manual': self.pis_base_calculo_manual,
             'cofins_base_calculo': self.cofins_base_calculo,
+            'cofins_base_calculo_manual': self.cofins_base_calculo_manual,
             'ii_base_calculo': self.ii_base_calculo,
+            'issqn_base_calculo': self.issqn_base_calculo,
         }
 
     @api.one
@@ -47,11 +53,15 @@ class AccountInvoiceLine(models.Model):
                  'tax_icms_id', 'tax_icms_st_id', 'tax_icms_inter_id',
                  'tax_icms_intra_id', 'tax_icms_fcp_id', 'tax_ipi_id',
                  'tax_pis_id', 'tax_cofins_id', 'tax_ii_id', 'tax_issqn_id',
-                 'tax_csll_id','tax_irpj_id',
+                 'tax_irpj_id',
+                 'tax_csll_id', 'tax_irrf_id', 'tax_inss_id',
                  'incluir_ipi_base', 'tem_difal', 'icms_aliquota_reducao_base',
                  'ipi_reducao_bc', 'icms_st_aliquota_mva', 'tax_simples_id',
                  'icms_st_aliquota_reducao_base', 'icms_aliquota_credito',
-                 'icms_st_aliquota_deducao')
+                 'icms_st_aliquota_deducao', 'icms_st_base_calculo_manual',
+                 'icms_base_calculo_manual', 'ipi_base_calculo_manual',
+                 'pis_base_calculo_manual', 'cofins_base_calculo_manual',
+                 'icms_st_aliquota_deducao', 'ii_base_calculo')
     def _compute_price(self):
         currency = self.invoice_id and self.invoice_id.currency_id or None
         price = self.price_unit * (1 - (self.discount or 0.0) / 100.0)
@@ -82,7 +92,7 @@ class AccountInvoiceLine(models.Model):
             [x for x in taxes['taxes']
              if x['id'] == self.tax_icms_intra_id.id]) if taxes else []
         icms_fcp = ([x for x in taxes['taxes']
-                    if x['id'] == self.tax_icms_fcp_id.id]) if taxes else []
+                     if x['id'] == self.tax_icms_fcp_id.id]) if taxes else []
         simples = ([x for x in taxes['taxes']
                     if x['id'] == self.tax_simples_id.id]) if taxes else []
         ipi = ([x for x in taxes['taxes']
@@ -99,6 +109,12 @@ class AccountInvoiceLine(models.Model):
                  if x['id'] == self.tax_csll_id.id]) if taxes else []
         ii = ([x for x in taxes['taxes']
                if x['id'] == self.tax_ii_id.id]) if taxes else []
+        csll = ([x for x in taxes['taxes']
+                 if x['id'] == self.tax_csll_id.id]) if taxes else []
+        irrf = ([x for x in taxes['taxes']
+                 if x['id'] == self.tax_irrf_id.id]) if taxes else []
+        inss = ([x for x in taxes['taxes']
+                 if x['id'] == self.tax_inss_id.id]) if taxes else []
 
         price_subtotal_signed = taxes['total_excluded'] if taxes else subtotal
         if self.invoice_id.currency_id and self.invoice_id.currency_id != \
@@ -134,12 +150,16 @@ class AccountInvoiceLine(models.Model):
             'cofins_valor': sum([x['amount'] for x in cofins]),
             'issqn_base_calculo': sum([x['base'] for x in issqn]),
             'issqn_valor': sum([x['amount'] for x in issqn]),
-            'csll_base_calculo': sum([x['base'] for x in csll]),
-            'csll_valor': sum([x['amount'] for x in csll]),
             'irpj_base_calculo': sum([x['base'] for x in irpj]),
             'irpj_valor': sum([x['amount'] for x in irpj]),
             'ii_base_calculo': sum([x['base'] for x in ii]),
             'ii_valor': sum([x['amount'] for x in ii]),
+            'csll_base_calculo': sum([x['base'] for x in csll]),
+            'csll_valor': sum([x['amount'] for x in csll]),
+            'inss_base_calculo': sum([x['base'] for x in inss]),
+            'inss_valor': sum([x['amount'] for x in inss]),
+            'irrf_base_calculo': sum([x['base'] for x in irrf]),
+            'irrf_valor': sum([x['amount'] for x in irrf]),
         })
 
     @api.multi
@@ -218,6 +238,8 @@ class AccountInvoiceLine(models.Model):
     icms_aliquota_reducao_base = fields.Float(
         '% Red. Base ICMS', digits=dp.get_precision('Discount'),
         default=0.00)
+    icms_base_calculo_manual = fields.Float(
+        'Base ICMS Manual', digits=dp.get_precision('Account'), default=0.00)
 
     # =========================================================================
     # ICMS Substituição
@@ -247,6 +269,9 @@ class AccountInvoiceLine(models.Model):
     icms_st_aliquota_mva = fields.Float(
         'MVA Ajustado ST',
         digits=dp.get_precision('Discount'), default=0.00)
+    icms_st_base_calculo_manual = fields.Float(
+        'Base ICMS ST Manual', digits=dp.get_precision('Account'),
+        default=0.00)
 
     # =========================================================================
     # ICMS Difal
@@ -285,11 +310,12 @@ class AccountInvoiceLine(models.Model):
     icms_csosn_simples = fields.Selection(CSOSN_SIMPLES, string="CSOSN ICMS")
     icms_aliquota_credito = fields.Float(u"% Cŕedito ICMS")
     icms_valor_credito = fields.Float(
-        u"Valor de Crédito", compute='_compute_price')
+        u"Valor de Crédito", compute='_compute_price', store=True)
     icms_st_aliquota_deducao = fields.Float(
-        string=u"% Dedução", help="Alíquota interna ou interestadual aplicada \
+        string=u"% ICMS Próprio",
+        help=u"Alíquota interna ou interestadual aplicada \
          sobre o valor da operação para deduzir do ICMS ST - Para empresas \
-         do Simples Nacional")
+         do Simples Nacional ou usado em casos onde existe apenas ST sem ICMS")
 
     # =========================================================================
     # ISSQN
@@ -338,6 +364,8 @@ class AccountInvoiceLine(models.Model):
         'Perc IPI', required=True, digits=dp.get_precision('Discount'),
         default=0.00)
     ipi_cst = fields.Selection(CST_IPI, string='CST IPI')
+    ipi_base_calculo_manual = fields.Float(
+        'Base IPI Manual', digits=dp.get_precision('Account'), default=0.00)
 
     # =========================================================================
     # PIS
@@ -358,6 +386,8 @@ class AccountInvoiceLine(models.Model):
     pis_aliquota = fields.Float(
         'Perc PIS', required=True, digits=dp.get_precision('Discount'),
         default=0.00)
+    pis_base_calculo_manual = fields.Float(
+        'Base PIS Manual', digits=dp.get_precision('Account'), default=0.00)
 
     # =========================================================================
     # COFINS
@@ -366,7 +396,7 @@ class AccountInvoiceLine(models.Model):
         'account.fiscal.position.tax.rule', 'Regra')
     tax_cofins_id = fields.Many2one('account.tax', string=u"Alíquota COFINS",
                                     domain=[('domain', '=', 'cofins')])
-    cofins_cst = fields.Selection(CST_PIS_COFINS, 'CST PIS')
+    cofins_cst = fields.Selection(CST_PIS_COFINS, 'CST COFINS')
     cofins_tipo = fields.Selection([('percent', 'Percentual')],
                                    string='Tipo do COFINS', required=True,
                                    default='percent')
@@ -378,6 +408,8 @@ class AccountInvoiceLine(models.Model):
         compute='_compute_price', store=True)
     cofins_aliquota = fields.Float(
         'Perc COFINS', digits=dp.get_precision('Discount'))
+    cofins_base_calculo_manual = fields.Float(
+        'Base COFINS Manual', digits=dp.get_precision('Account'), default=0.00)
 
     # =========================================================================
     # CSLL
@@ -425,7 +457,7 @@ class AccountInvoiceLine(models.Model):
                                 domain=[('domain', '=', 'ii')])
     ii_base_calculo = fields.Float(
         'Base II', required=True, digits=dp.get_precision('Account'),
-        default=0.00, compute='_compute_price', store=True)
+        default=0.00, store=True)
     ii_aliquota = fields.Float(
         '% II', required=True, digits=dp.get_precision('Account'),
         default=0.00)
@@ -442,7 +474,55 @@ class AccountInvoiceLine(models.Model):
         'br_account.import.declaration',
         'invoice_line_id', u'Declaração de Importação')
 
-    informacao_adicional = fields.Text(string="Informações Adicionais")
+    # =========================================================================
+    # Impostos de serviço - CSLL
+    # =========================================================================
+    csll_rule_id = fields.Many2one('account.fiscal.position.tax.rule', 'Regra')
+    tax_csll_id = fields.Many2one('account.tax', string=u"Alíquota CSLL",
+                                  domain=[('domain', '=', 'csll')])
+    csll_base_calculo = fields.Float(
+        'Base CSLL', required=True, digits=dp.get_precision('Account'),
+        default=0.00, compute='_compute_price', store=True)
+    csll_valor = fields.Float(
+        'Valor CSLL', required=True, digits=dp.get_precision('Account'),
+        default=0.00, compute='_compute_price', store=True)
+    csll_aliquota = fields.Float(
+        'Perc CSLL', required=True, digits=dp.get_precision('Account'),
+        default=0.00)
+
+    # =========================================================================
+    # Impostos de serviço - IRRF
+    # =========================================================================
+    irrf_rule_id = fields.Many2one('account.fiscal.position.tax.rule', 'Regra')
+    tax_irrf_id = fields.Many2one('account.tax', string=u"Alíquota IRRF",
+                                  domain=[('domain', '=', 'irrf')])
+    irrf_base_calculo = fields.Float(
+        'Base IRRF', required=True, digits=dp.get_precision('Account'),
+        default=0.00, compute='_compute_price', store=True)
+    irrf_valor = fields.Float(
+        'Valor IRFF', required=True, digits=dp.get_precision('Account'),
+        default=0.00, compute='_compute_price', store=True)
+    irrf_aliquota = fields.Float(
+        'Perc IRRF', required=True, digits=dp.get_precision('Account'),
+        default=0.00)
+
+    # =========================================================================
+    # Impostos de serviço - INSS
+    # =========================================================================
+    inss_rule_id = fields.Many2one('account.fiscal.position.tax.rule', 'Regra')
+    tax_inss_id = fields.Many2one('account.tax', string=u"Alíquota IRRF",
+                                  domain=[('domain', '=', 'inss')])
+    inss_base_calculo = fields.Float(
+        u'Base INSS', required=True, digits=dp.get_precision('Account'),
+        default=0.00, compute='_compute_price', store=True)
+    inss_valor = fields.Float(
+        u'Valor INSS', required=True, digits=dp.get_precision('Account'),
+        default=0.00, compute='_compute_price', store=True)
+    inss_aliquota = fields.Float(
+        u'Perc INSS', required=True, digits=dp.get_precision('Account'),
+        default=0.00)
+
+    informacao_adicional = fields.Text(string=u"Informações Adicionais")
 
     def _update_tax_from_ncm(self):
         if self.product_id:
@@ -473,7 +553,8 @@ class AccountInvoiceLine(models.Model):
             self.tax_icms_inter_id | self.tax_icms_intra_id | \
             self.tax_icms_fcp_id | self.tax_simples_id | self.tax_ipi_id | \
             self.tax_pis_id | self.tax_cofins_id | self.tax_issqn_id | \
-            self.tax_ii_id | self.tax_irpj_id | self.tax_csll_id
+            self.tax_ii_id | self.tax_irpj_id | self.tax_csll_id | self.tax_irrf_id | \
+            self.tax_inss_id
 
     def _set_extimated_taxes(self, price):
         service = self.product_id.service_type_id
@@ -500,7 +581,7 @@ class AccountInvoiceLine(models.Model):
             self.tributos_estimados_estaduais + \
             self.tributos_estimados_municipais
 
-    @api.onchange('quantity')
+    @api.onchange('price_subtotal')
     def _br_account_onchange_quantity(self):
         self._set_extimated_taxes(self.price_subtotal)
 
@@ -523,7 +604,7 @@ class AccountInvoiceLine(models.Model):
             self.tax_icms_intra_id | self.tax_icms_fcp_id | \
             self.tax_simples_id | self.tax_ipi_id | self.tax_pis_id | \
             self.tax_cofins_id | self.tax_issqn_id | self.tax_ii_id | \
-            self.tax_csll_id | self.tax_irpj_id
+            self.tax_csll_id | self.tax_irpj_id | self.tax_irrf_id | self.tax_inss_id
 
     @api.onchange('tax_icms_id')
     def _onchange_tax_icms_id(self):
@@ -593,4 +674,16 @@ class AccountInvoiceLine(models.Model):
     def _onchange_tax_irpj_id(self):
         if self.tax_irpj_id:
             self.irpj_aliquota = self.tax_irpj_id.amount
+        self._update_invoice_line_ids()
+
+    @api.onchange('tax_irrf_id')
+    def _onchange_tax_irrf_id(self):
+        if self.tax_irrf_id:
+            self.irrf_aliquota = self.tax_irrf_id.amount
+        self._update_invoice_line_ids()
+
+    @api.onchange('tax_inss_id')
+    def _onchange_tax_inss_id(self):
+        if self.tax_inss_id:
+            self.inss_aliquota = self.tax_inss_id.amount
         self._update_invoice_line_ids()
