@@ -604,7 +604,6 @@ class AccountInvoiceLine(models.Model):
             self.tax_icms_intra_id | self.tax_icms_fcp_id | \
             self.tax_simples_id | self.tax_ipi_id | self.tax_pis_id | \
             self.tax_cofins_id | self.tax_issqn_id | self.tax_ii_id | \
-
             self.tax_csll_id | self.tax_irpj_id | self.tax_irrf_id | self.tax_inss_id
 
     @api.onchange('tax_icms_id')
