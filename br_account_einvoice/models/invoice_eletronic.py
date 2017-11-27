@@ -509,7 +509,7 @@ class InvoiceEletronicItem(models.Model):
     tipo_produto = fields.Selection(
         [('product', 'Produto'),
          ('service', u'Serviço')],
-        string="Tipo Produto", readonly=True, states=STATE)
+        string="Tipo Produto", related='product_id.fiscal_type',store=True, readonly=True, states=STATE)
     cfop = fields.Char(u'CFOP', size=5, readonly=True, states=STATE)
     ncm = fields.Char(u'NCM', size=10, readonly=True, states=STATE)
 

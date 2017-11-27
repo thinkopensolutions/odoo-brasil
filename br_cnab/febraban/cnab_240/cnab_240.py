@@ -22,7 +22,6 @@ except ImportError:
 
 
 class Cnab240(Cnab):
-
     def __init__(self):
         super(Cnab, self).__init__()
 
@@ -82,7 +81,7 @@ class Cnab240(Cnab):
                                  acc_number),
             'cedente_conta_dv': cedente_conta_dv,
             'cedente_convenio': self.order.payment_mode_id.bank_account_id.
-            codigo_convenio,
+                codigo_convenio,
             'cedente_agencia_dv': self.order.payment_mode_id.
                 bank_account_id.bra_number_dig,
             'cedente_nome': self.order.payment_mode_id.company_id.legal_name,
@@ -154,14 +153,8 @@ class Cnab240(Cnab):
                                    bra_number),
             'cedente_conta': int(self.order.payment_mode_id.bank_account_id.
                                  acc_number),
-            'cedente_conta_dv': self.order.payment_mode_id.bank_account_id.
-<<<<<<< HEAD
-                acc_number_dig,
-=======
-            acc_number_dig,
-            'cedente_convenio': self.order.payment_mode_id.bank_account_id.
-            codigo_convenio,
->>>>>>> 159db4db32cb1acfa0ca47dc50616253f6da05d5
+            'cedente_conta_dv': self.order.payment_mode_id.bank_account_id.acc_number_dig,
+            'cedente_convenio': self.order.payment_mode_id.bank_account_id.codigo_convenio,
             'cedente_agencia_dv': self.order.payment_mode_id.bank_account_id.
                 bra_number_dig,
             'cedente_agencia_conta_dv': int(self.order.payment_mode_id.
@@ -248,7 +241,7 @@ class Cnab240(Cnab):
                 # and this is used to loacate payment order line while
                 # importing bank return
                 if line.nosso_numero[:2] != year:
-                    line.nosso_numero  =  year + str(line.nosso_numero)
+                    line.nosso_numero = year + str(line.nosso_numero)
                 line.state = 'ag'
 
         return unicode(self.arquivo)
