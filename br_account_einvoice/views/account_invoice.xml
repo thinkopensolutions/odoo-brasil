@@ -7,7 +7,7 @@
         <field name="inherit_id" ref="account.invoice_form"/>
         <field name="arch" type="xml">
             <button name="action_invoice_cancel" position="after">
-                <button name="emit_eletronic_doc_manually" type="object" class="oe_highlight" string="Emit Eletonic Doc"
+                <button name="emit_eletronic_doc_manually" type="object" string="Emit Eletonic Doc"
                     attrs="{'invisible': ['|', ('state', '=', 'draft'), ('is_eletronic', '=', False)]}">
                 </button>
             </button>
