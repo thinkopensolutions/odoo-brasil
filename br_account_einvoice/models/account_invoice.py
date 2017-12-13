@@ -212,6 +212,17 @@ class AccountInvoice(models.Model):
         vals['eletronic_item_ids'] = eletronic_items
         return vals
 
+    @api.multi
+    def emit_eletronic_doc_manually(self):
+        for item in self:
+            if item.is_eletronic and item.company_id.issue_eletronic_doc == 'm':
+                edoc_vals = self._prepare_edoc_vals(item)
+                if edoc_vals:
+                    eletronic = self.env['invoice.eletronic'].create(edoc_vals)
+                    eletronic.validate_invoice()
+                    eletronic.action_post_validate()
+        return True
+
     #  Emit Eletronic document when invoice is validated
     @api.multi
     def invoice_validate(self):
