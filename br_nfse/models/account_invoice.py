@@ -18,6 +18,16 @@ class AccountInvoice(models.Model):
 
         res['ambiente_nfse'] = 'homologacao' \
             if inv.company_id.tipo_ambiente_nfse == '2' else 'producao'
+
+        if self.invoice_model == '001':
+            dt = datetime.strptime(self.date_invoice, '%Y-%m-%d')
+            dt_now = datetime.now()
+            dt = datetime(dt.year, dt.month, dt.day, dt_now.hour,
+                          dt_now.minute, dt_now.second)
+            dt = datetime.strftime(dt, DTFT)
+            res['data_emissao'] = dt
+            res['data_fatura'] = dt
+
         return res
 
     def _prepare_edoc_item_vals(self, line):

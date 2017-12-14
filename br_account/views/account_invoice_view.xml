@@ -446,4 +446,8 @@
         <field name="name">Habilitar edição das bases de cálculo</field>
         <field name="category_id" ref="base.module_category_hidden"/>
     </record>>
+<<<<<<< HEAD
 </odoo>
+=======
+</odoo>
+>>>>>>> upstream/10.0
