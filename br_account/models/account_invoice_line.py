@@ -103,13 +103,11 @@ class AccountInvoiceLine(models.Model):
                    if x['id'] == self.tax_cofins_id.id]) if taxes else []
         issqn = ([x for x in taxes['taxes']
                   if x['id'] == self.tax_issqn_id.id]) if taxes else []
-<<<<<<< HEAD
+
         irpj = ([x for x in taxes['taxes']
                   if x['id'] == self.tax_irpj_id.id]) if taxes else []
         csll = ([x for x in taxes['taxes']
                  if x['id'] == self.tax_csll_id.id]) if taxes else []
-=======
->>>>>>> upstream/10.0
         ii = ([x for x in taxes['taxes']
                if x['id'] == self.tax_ii_id.id]) if taxes else []
         csll = ([x for x in taxes['taxes']
