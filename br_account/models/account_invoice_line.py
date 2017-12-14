@@ -413,7 +413,6 @@ class AccountInvoiceLine(models.Model):
         'Base COFINS Manual', digits=dp.get_precision('Account'), default=0.00)
 
     # =========================================================================
-<<<<<<< HEAD
     # CSLL
     # =========================================================================
     csll_rule_id = fields.Many2one(
@@ -452,8 +451,6 @@ class AccountInvoiceLine(models.Model):
         'Perc IRPJ', digits=dp.get_precision('Discount'))
 
     # =========================================================================
-=======
->>>>>>> upstream/10.0
     # Imposto de importação
     # =========================================================================
     ii_rule_id = fields.Many2one('account.fiscal.position.tax.rule', 'Regra')
@@ -557,11 +554,7 @@ class AccountInvoiceLine(models.Model):
             self.tax_icms_inter_id | self.tax_icms_intra_id | \
             self.tax_icms_fcp_id | self.tax_simples_id | self.tax_ipi_id | \
             self.tax_pis_id | self.tax_cofins_id | self.tax_issqn_id | \
-<<<<<<< HEAD
             self.tax_ii_id | self.tax_irpj_id | self.tax_csll_id | self.tax_irrf_id | \
-=======
-            self.tax_ii_id | self.tax_csll_id | self.tax_irrf_id | \
->>>>>>> upstream/10.0
             self.tax_inss_id
 
     def _set_extimated_taxes(self, price):
@@ -612,11 +605,7 @@ class AccountInvoiceLine(models.Model):
             self.tax_icms_intra_id | self.tax_icms_fcp_id | \
             self.tax_simples_id | self.tax_ipi_id | self.tax_pis_id | \
             self.tax_cofins_id | self.tax_issqn_id | self.tax_ii_id | \
-<<<<<<< HEAD
             self.tax_csll_id | self.tax_irpj_id | self.tax_irrf_id | self.tax_inss_id
-=======
-            self.tax_csll_id | self.tax_irrf_id | self.tax_inss_id
->>>>>>> upstream/10.0
 
     @api.onchange('tax_icms_id')
     def _onchange_tax_icms_id(self):
@@ -682,15 +671,12 @@ class AccountInvoiceLine(models.Model):
             self.csll_aliquota = self.tax_csll_id.amount
         self._update_invoice_line_ids()
 
-<<<<<<< HEAD
     @api.onchange('tax_irpj_id')
     def _onchange_tax_irpj_id(self):
         if self.tax_irpj_id:
             self.irpj_aliquota = self.tax_irpj_id.amount
         self._update_invoice_line_ids()
 
-=======
->>>>>>> upstream/10.0
     @api.onchange('tax_irrf_id')
     def _onchange_tax_irrf_id(self):
         if self.tax_irrf_id:
