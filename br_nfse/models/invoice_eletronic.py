@@ -35,10 +35,8 @@ class InvoiceEletronicItem(models.Model):
 class InvoiceEletronic(models.Model):
     _inherit = 'invoice.eletronic'
 
-    ambiente_nfse = fields.Selection(
-        [('homologacao', u'Homologação'),
-         ('producao', u'Produção')],
-        string=u'Ambiente', readonly=True, states=STATE)
+    ambiente_nfse = fields.Selection(string="Ambiente NFSe", related="company_id.tipo_ambiente_nfse",
+        readonly=True, states=STATE)
     operation = fields.Selection(
         [('T', u"Tributado em São Paulo"),
          ('F', u"Tributado Fora de São Paulo"),

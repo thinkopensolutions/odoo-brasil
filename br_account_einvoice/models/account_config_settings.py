@@ -12,7 +12,7 @@ class AccountConfigSettings(models.TransientModel):
         'mail.template', string="Template de Email para NFe",
         domain=[('model_id.model', '=', 'account.invoice')])
 
-    issue_eletronic_doc = fields.Selection([('o', u'Open'), ('p', u'Paid')],
+    issue_eletronic_doc = fields.Selection([('m',u'Manually'), ('o', u'Open'), ('p', u'Paid')],
                                   string=u'Emitir documento eletrônico',
                                   default='o',
                                   required=True,
