@@ -8,7 +8,7 @@
         <field name="arch" type="xml">
             <button name="action_invoice_cancel" position="after">
                 <button name="emit_eletronic_doc_manually" type="object" string="Emit Eletronic Doc"
-                    attrs="{'invisible': ['|', ('state', '=', 'draft'), ('is_eletronic', '=', False)]}">
+                    attrs="{'invisible': ['|', ('state', 'in', ['draft','cancel']), ('is_eletronic', '=', False)]}">
                 </button>
             </button>
         </field>
