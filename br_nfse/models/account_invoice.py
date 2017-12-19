@@ -5,6 +5,7 @@
 from odoo import fields, models, api
 from odoo.exceptions import UserError
 from datetime import datetime
+from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT as DTFT
 
 class AccountInvoice(models.Model):
     _inherit = 'account.invoice'
