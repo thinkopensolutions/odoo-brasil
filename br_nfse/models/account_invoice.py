@@ -4,7 +4,7 @@
 
 from odoo import fields, models, api
 from odoo.exceptions import UserError
-
+from datetime import datetime
 
 class AccountInvoice(models.Model):
     _inherit = 'account.invoice'
