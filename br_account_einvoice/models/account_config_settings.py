@@ -12,11 +12,11 @@ class AccountConfigSettings(models.TransientModel):
         'mail.template', string="Template de Email para NFe",
         domain=[('model_id.model', '=', 'account.invoice')])
 
-    issue_eletronic_doc = fields.Selection([('o', u'Open'), ('p', u'Paid')],
-                                  string=u'Emitir documento eletrônico',
-                                  default='o',
-                                  required=True,
-                                  help=u'This field tells when to issue NFSe')
+    issue_eletronic_doc = fields.Selection([('m', u'Manually'), ('o', u'Open'), ('p', u'Paid')],
+                                           string=u'Emitir documento eletrônico',
+                                           default='o',
+                                           required=True,
+                                           help=u'This field tells when to issue NFSe')
 
     def get_default_issue_eletronic_doc(self, fields):
         return {'issue_eletronic_doc':
