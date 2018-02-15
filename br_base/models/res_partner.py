@@ -49,7 +49,7 @@ class ResPartner(models.Model):
     def _display_address(self, without_company=False):
         if self.country_id and self.country_id.code != 'BR':
             # this ensure other localizations could do what they want
-            return super(ResPartner, self)._display_self(
+            return super(ResPartner, self)._display_address(
                 without_company)
         else:
             address_format = self.country_id.address_format or \
