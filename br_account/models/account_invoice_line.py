@@ -420,7 +420,7 @@ class AccountInvoiceLine(models.Model):
     tax_csll_id = fields.Many2one('account.tax', string=u"Alíquota CSLL",
                                   domain=[('domain', '=', 'csll')])
     csll_tipo = fields.Selection([('percent', 'Percentual')],
-                                 string='Tipo do CSLL', required=True,
+                                 string='Tipo do CSLL', 
                                  default='percent')
     csll_base_calculo = fields.Float(
         'Base CSLL', compute='_compute_price', store=True,
@@ -439,7 +439,7 @@ class AccountInvoiceLine(models.Model):
     tax_irpj_id = fields.Many2one('account.tax', string=u"Alíquota IRPJ",
                                   domain=[('domain', '=', 'irpj')])
     irpj_tipo = fields.Selection([('percent', 'Percentual')],
-                                 string='Tipo do IRPJ', required=True,
+                                 string='Tipo do IRPJ',
                                  default='percent')
     irpj_base_calculo = fields.Float(
         'Base IRPJ', compute='_compute_price', store=True,
