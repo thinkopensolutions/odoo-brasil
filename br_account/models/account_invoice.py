@@ -325,8 +325,11 @@ class AccountInvoice(models.Model):
                 product=line.product_id, partner=self.partner_id)
 
             for tax in line.invoice_line_tax_ids:
-                tax_dict = next(
-                    x for x in taxes_dict['taxes'] if x['id'] == tax.id)
+                try:
+                    tax_dict = next(
+                        x for x in taxes_dict['taxes'] if x['id'] == tax.id)
+                except StopIteration:
+                    continue
                 if not tax.price_include and tax.account_id:
                     res[contador]['price'] += tax_dict['amount']
                 if tax.price_include and (not tax.account_id or
