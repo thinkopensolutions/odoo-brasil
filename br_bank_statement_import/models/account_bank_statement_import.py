@@ -182,8 +182,7 @@ class AccountBankStatementImport(models.TransientModel):
                     if evento.servico_segmento == 'T':
                         transacoes.append({
                             'name': evento.sacado_nome,
-                            'date': datetime.strptime(
-                                str(evento.vencimento_titulo).zfill(8), '%d%m%Y').date(),
+
                             'amount': evento.valor_titulo,
                             'ref': evento.numero_documento,
                             'label': evento.sacado_inscricao_numero,  # cnpj
@@ -194,6 +193,15 @@ class AccountBankStatementImport(models.TransientModel):
                             'servico_codigo_movimento': evento.servico_codigo_movimento,
                             'errors': evento.motivo_ocorrencia  # 214-221
                         })
+                        try:
+                            transacoes.append({
+                            'date': datetime.strptime(
+                                str(evento.vencimento_titulo).zfill(8), '%d%m%Y').date()
+                            })
+                        except:
+                            # Invalid Due Date
+                            pass
+
                     else:
                         # set amount and data_ocorrencia from segment U, it has with juros
                         # Formula:
