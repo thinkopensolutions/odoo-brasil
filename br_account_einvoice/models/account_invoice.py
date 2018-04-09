@@ -8,11 +8,12 @@ from random import SystemRandom
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
+
 TYPE2EDOC = {
-    'out_invoice': 'saida',  # Customer Invoice
-    'in_invoice': 'entrada',  # Vendor Bill
-    'out_refund': 'entrada',  # Customer Refund
-    'in_refund': 'saida',  # Vendor Refund
+    'out_invoice': 'saida',        # Customer Invoice
+    'in_invoice': 'entrada',          # Vendor Bill
+    'out_refund': 'entrada',        # Customer Refund
+    'in_refund': 'saida',          # Vendor Refund
 }
 
 
@@ -27,7 +28,7 @@ class AccountInvoice(models.Model):
 
     invoice_eletronic_ids = fields.One2many(
         'invoice.eletronic', 'invoice_id',
-        'Documentos Eletrônicos', readonly=True)
+        u'Documentos Eletrônicos', readonly=True)
     invoice_model = fields.Char(
         string="Modelo de Fatura", related="fiscal_document_id.code",
         readonly=True)
@@ -36,7 +37,7 @@ class AccountInvoice(models.Model):
     internal_number = fields.Integer(
         'Invoice Number', readonly=True,
         states={'draft': [('readonly', False)]},
-        help="""Unique number of the invoice, computed
+        help=u"""Unique number of the invoice, computed
             automatically when the invoice is created.""")
 
     @api.multi
@@ -89,6 +90,7 @@ class AccountInvoice(models.Model):
             'origem': line.icms_origem,
             'tributos_estimados': line.tributos_estimados,
             'ncm': line.fiscal_classification_id.code,
+            'item_pedido_compra': line.item_pedido_compra,
             # - ICMS -
             'icms_cst': line.icms_cst,
             'icms_aliquota': line.icms_aliquota,
@@ -99,8 +101,8 @@ class AccountInvoice(models.Model):
             # - ICMS ST -
             'icms_st_aliquota': line.icms_st_aliquota,
             'icms_st_aliquota_mva': line.icms_st_aliquota_mva,
-            'icms_st_aliquota_reducao_base': line. \
-                icms_st_aliquota_reducao_base,
+            'icms_st_aliquota_reducao_base': line.\
+            icms_st_aliquota_reducao_base,
             'icms_st_base_calculo': line.icms_st_base_calculo,
             'icms_st_valor': line.icms_st_valor,
             # - Simples Nacional -
@@ -119,20 +121,38 @@ class AccountInvoice(models.Model):
             'ii_valor_iof': line.ii_valor_iof,
             # - PIS -
             'pis_cst': line.pis_cst,
-            'pis_aliquota': line.pis_aliquota,
+            'pis_aliquota': abs(line.pis_aliquota),
             'pis_base_calculo': line.pis_base_calculo,
-            'pis_valor': line.pis_valor,
+            'pis_valor': abs(line.pis_valor),
+            'pis_valor_retencao':
+            abs(line.pis_valor) if line.pis_valor < 0 else 0,
             # - COFINS -
             'cofins_cst': line.cofins_cst,
-            'cofins_aliquota': line.cofins_aliquota,
+            'cofins_aliquota': abs(line.cofins_aliquota),
             'cofins_base_calculo': line.cofins_base_calculo,
-            'cofins_valor': line.cofins_valor,
+            'cofins_valor': abs(line.cofins_valor),
+            'cofins_valor_retencao':
+            abs(line.cofins_valor) if line.cofins_valor < 0 else 0,
             # - ISSQN -
             'issqn_codigo': line.service_type_id.code,
-            'issqn_aliquota': line.issqn_aliquota,
+            'issqn_aliquota': abs(line.issqn_aliquota),
             'issqn_base_calculo': line.issqn_base_calculo,
-            'issqn_valor': line.issqn_valor,
-            'issqn_valor_retencao': 0.00,
+            'issqn_valor': abs(line.issqn_valor),
+            'issqn_valor_retencao':
+            abs(line.issqn_valor) if line.issqn_valor < 0 else 0,
+            # - RETENÇÔES -
+            'csll_base_calculo': line.csll_base_calculo,
+            'csll_aliquota': abs(line.csll_aliquota),
+            'csll_valor_retencao':
+            abs(line.csll_valor) if line.csll_valor < 0 else 0,
+            'irrf_base_calculo': line.irrf_base_calculo,
+            'irrf_aliquota': abs(line.irrf_aliquota),
+            'irrf_valor_retencao':
+            abs(line.irrf_valor) if line.irrf_valor < 0 else 0,
+            'inss_base_calculo': line.inss_base_calculo,
+            'inss_aliquota': abs(line.inss_aliquota),
+            'inss_valor_retencao':
+            abs(line.inss_valor) if line.inss_valor < 0 else 0,
         }
         return vals
 
@@ -148,6 +168,7 @@ class AccountInvoice(models.Model):
             'tipo_operacao': TYPE2EDOC[invoice.type],
             'model': invoice.fiscal_document_id.code,
             'serie': invoice.document_serie_id.id,
+            'serie_documento': invoice.document_serie_id.code,
             'numero': invoice.internal_number,
             'numero_controle': num_controle,
             'numero_nfe': invoice.internal_number,
@@ -157,6 +178,30 @@ class AccountInvoice(models.Model):
             'partner_id': invoice.partner_id.id,
             'payment_term_id': invoice.payment_term_id.id,
             'fiscal_position_id': invoice.fiscal_position_id.id,
+            'valor_icms': invoice.icms_value,
+            'valor_icmsst': invoice.icms_st_value,
+            'valor_ipi': invoice.ipi_value,
+            'valor_pis': invoice.pis_value,
+            'valor_cofins': invoice.cofins_value,
+            'valor_ii': invoice.ii_value,
+            'valor_bruto': invoice.total_bruto,
+            'valor_desconto': invoice.total_desconto,
+            'valor_final': invoice.amount_total,
+            'valor_bc_icms': invoice.icms_base,
+            'valor_bc_icmsst': invoice.icms_st_base,
+            'valor_servicos': invoice.issqn_base,
+            'valor_bc_issqn': invoice.issqn_base,
+            'valor_issqn': invoice.issqn_value,
+            'valor_estimado_tributos': invoice.total_tributos_estimados,
+            'valor_retencao_issqn': invoice.issqn_retention,
+            'valor_retencao_pis': invoice.pis_retention,
+            'valor_retencao_cofins': invoice.cofins_retention,
+            'valor_bc_irrf': invoice.irrf_base,
+            'valor_retencao_irrf': invoice.irrf_retention,
+            'valor_bc_csll': invoice.csll_base,
+            'valor_retencao_csll': invoice.csll_retention,
+            'valor_bc_inss': invoice.inss_base,
+            'valor_retencao_inss': invoice.inss_retention,
         }
 
         eletronic_items = []
@@ -165,20 +210,20 @@ class AccountInvoice(models.Model):
                                     self._prepare_edoc_item_vals(inv_line)))
 
         vals['eletronic_item_ids'] = eletronic_items
-        vals['valor_icms'] = invoice.icms_value
-        vals['valor_icmsst'] = invoice.icms_st_value
-        vals['valor_ipi'] = invoice.ipi_value
-        vals['valor_pis'] = invoice.pis_value
-        vals['valor_cofins'] = invoice.cofins_value
-        vals['valor_ii'] = invoice.ii_value
-        vals['valor_bruto'] = invoice.total_bruto
-        vals['valor_desconto'] = invoice.total_desconto
-        vals['valor_final'] = invoice.amount_total
-        vals['valor_bc_icms'] = invoice.icms_base
-        vals['valor_bc_icmsst'] = invoice.icms_st_base
-        vals['valor_estimado_tributos'] = invoice.total_tributos_estimados
         return vals
 
+    @api.multi
+    def emit_eletronic_doc_manually(self):
+        for item in self:
+            if item.is_eletronic and item.company_id.issue_eletronic_doc == 'm':
+                edoc_vals = self._prepare_edoc_vals(item)
+                if edoc_vals:
+                    eletronic = self.env['invoice.eletronic'].create(edoc_vals)
+                    eletronic.validate_invoice()
+                    eletronic.action_post_validate()
+        return True
+
+    #  Emit Eletronic document when invoice is validated
     @api.multi
     def invoice_validate(self):
         res = super(AccountInvoice, self).invoice_validate()
@@ -191,7 +236,7 @@ class AccountInvoice(models.Model):
                     eletronic.validate_invoice()
                     eletronic.action_post_validate()
         return res
-
+    #  Emit Eletronic document when invoice is paid
     @api.multi
     def action_invoice_paid(self):
         res = super(AccountInvoice, self).action_invoice_paid()
@@ -217,3 +262,10 @@ class AccountInvoice(models.Model):
                 if edoc.can_unlink():
                     edoc.unlink()
         return res
+
+
+class AccountInvoiceLine(models.Model):
+    _inherit = 'account.invoice.line'
+
+    item_pedido_compra = fields.Char(
+        string=u'Item do pedido de compra do cliente')
