@@ -389,7 +389,6 @@ class AccountInvoice(models.Model):
     @api.model
     def tax_line_move_line_get(self):
         res = super(AccountInvoice, self).tax_line_move_line_get()
-
         done_taxes = []
         for tax_line in sorted(self.tax_line_ids, key=lambda x: -x.sequence):
             if tax_line.amount and tax_line.tax_id.deduced_account_id:
@@ -404,7 +403,7 @@ class AccountInvoice(models.Model):
                         'price_unit': tax_line.amount*-1,
                         'quantity': 1,
                         'price': tax_line.amount*-1,
-                        'account_id': tax_line.tax_id.deduced_account_id.id,
+                        'account_id': tax_line.tax_id.refund_account_id.id,
                         'account_analytic_id': tax_line.account_analytic_id.id,
                         'invoice_id': self.id,
                         'tax_ids': [(6, 0, done_taxes)]
