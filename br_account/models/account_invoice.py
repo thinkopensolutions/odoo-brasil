@@ -391,7 +391,7 @@ class AccountInvoice(models.Model):
         res = super(AccountInvoice, self).tax_line_move_line_get()
         done_taxes = []
         for tax_line in sorted(self.tax_line_ids, key=lambda x: -x.sequence):
-            if not tax_line.tax_id.refund_account_id and tax.amount > 0:
+            if not tax_line.tax_id.refund_account_id and tax_line.tax_id.amount > 0:
                 raise UserError(u'Please select Conta Imposto sobre Reembolsos for tax %s' %tax_line.tax_id.name)
             if tax_line.amount and tax_line.tax_id.refund_account_id:
                 tax = tax_line.tax_id
