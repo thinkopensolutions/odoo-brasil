@@ -14,10 +14,14 @@ class PurchaseOrder(models.Model):
     def _amount_all(self):
         super(PurchaseOrder, self)._amount_all()
         for order in self:
+            lines = order.order_line
+            self.total_seguro = sum(l.valor_seguro for l in lines)
+            self.total_frete = sum(l.valor_frete for l in lines)
+            self.total_despesas = sum(l.outras_despesas for l in lines)
             order.update({
-                'amount_total': order.total_bruto + order.total_tax +
-                order.total_frete + order.total_seguro +
-                order.total_despesas,
+                'amount_total': self.amount_total +
+                                order.total_frete + order.total_seguro +
+                                order.total_despesas
             })
 
     def _calc_ratio(self, qty, total):
