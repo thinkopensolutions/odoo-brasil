@@ -6,14 +6,14 @@
         <field name="inherit_id" ref="purchase.purchase_order_form" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='order_line']/tree/field[@name='product_qty']" position="after">
-                <field name="outras_despesas" invisible="1" />
-                <field name="valor_seguro" invisible="1" />
-                <field name="valor_frete" invisible="1" />
+                <field name="outras_despesas" invisible="0" />
+                <field name="valor_seguro" invisible="0" />
+                <field name="valor_frete" invisible="0" />
             </xpath>
             <field name="amount_tax" position="after">
-                <field name="total_despesas" widget='monetary' options="{'currency_field': 'currency_id'}"/>
-                <field name="total_seguro" widget='monetary' options="{'currency_field': 'currency_id'}"/>
-                <field name="total_frete" widget='monetary' options="{'currency_field': 'currency_id'}" />
+                <field name="total_despesas" readonly="1" widget='monetary' options="{'currency_field': 'currency_id'}"/>
+                <field name="total_seguro" readonly="1" widget='monetary' options="{'currency_field': 'currency_id'}"/>
+                <field name="total_frete" readonly="1" widget='monetary' options="{'currency_field': 'currency_id'}" />
             </field>
         </field>
     </record>
