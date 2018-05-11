@@ -59,10 +59,28 @@ class AcquirerCielo(models.Model):
             if line.product_id.weight:
                 item['Weight'] = "%d" % (line.product_id.weight * 1000)
             items.append(item)
+
         shipping = {
-            "Type": "WithoutShipping",
+            "Type": "FixedAmount",
+            "SourceZipCode": re.sub('[^0-9]', '', order.company_id.zip),
             "TargetZipCode": re.sub('[^0-9]', '', order.partner_id.zip),
+            "Address": {
+                "Street": order.partner_id.street,
+                "Number": order.partner_id.number,
+                "Complement": order.partner_id.street2,
+                "District": order.partner_id.district,
+                "City": order.partner_id.city_id.name,
+                "State": order.partner_id.state_id.code,
+            },
+            "Services": [
+                {
+                    "Name": "Correios",
+                    "Price": order.total_frete * 100,
+                    "Deadline": 15
+                }
+            ]
         }
+
         address = {
             "Street": order.partner_id.street,
             "Number": order.partner_id.number,
