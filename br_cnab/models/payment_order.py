@@ -78,8 +78,21 @@ class PaymentOrder(models.Model):
             if not order.payment_mode_id.company_id.legal_name:
                 raise UserError(u'Legal Name not set for company')
 
+            # Bradesco specific validations
+            if order.payment_mode_id.bank_account_id.bank_id.bic == '237':
+                if not order.payment_mode_id.bank_account_id.codigo_convenio:
+                    raise UserError(
+                        _(
+                            u"Código Convênio (Código de Beneficiário) must be integer for account %s in payment mode " % order.payment_mode_id.bank_account_id.acc_number))
 
-            for line in order.line_ids:
+                try:
+                    int(order.payment_mode_id.bank_account_id.codigo_convenio)
+                except:
+                    raise UserError(
+                        _(
+                            u"Código Convênio (Código de Beneficiário) must be integer for account %s in payment mode " % order.payment_mode_id.bank_account_id.acc_number))
+
+        for line in order.line_ids:
                 if line.state in ['r', 'rj']:
                     if not line.partner_id:
                         raise UserError(_("Partner not defined for %s" % line.name))
