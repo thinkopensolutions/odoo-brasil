@@ -180,11 +180,12 @@ class AccountBankStatementImport(models.TransientModel):
             if bank == itau:
                 for evento in lote.eventos:
                     if evento.servico_segmento == 'T':
-                        vencimento = False
+                        vencimento = datetime.strptime(
+                str(arquivo.header.arquivo_data_de_geracao).zfill(8), '%d%m%Y')
 
                         if evento.vencimento_titulo:
                             vencimento = datetime.strptime(
-                                str(evento.vencimento_titulo).zfill(8), '%d%m%Y').date(),
+                                str(evento.vencimento_titulo).zfill(8), '%d%m%Y').date()
 
                         transacoes.append({
                             'name': evento.sacado_nome,
