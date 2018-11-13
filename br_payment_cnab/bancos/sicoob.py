@@ -56,6 +56,7 @@ class Sicoob240(Cnab_240):
             'tipo_movimento': int(segmento.get('tipo_movimento')),
             'favorecido_cep': self._string_to_num(str(
                 segmento.get('favorecido_cep')), 0),
+            'favorecido_nome': segmento.get('favorecido_nome')[:30],
             'valor_documento': self._string_to_monetary(
                 segmento.get('valor_documento')),
             'valor_abatimento': self._string_to_monetary(
@@ -121,9 +122,9 @@ class Sicoob240(Cnab_240):
         segments = super(Sicoob240, self).segments_per_operation()
         segments.update({
             '03': ["SegmentoJ"],
-            '04': ["SegmentoO", "SegmentoW", "SegmentoZ"],
+            '04': ["SegmentoO"],
             '05': ["SegmentoN_GPS"],
-            '06': ["SegmentoN_DarfNormal", "SegmentoW", "SegmentoZ"],
-            '07': ["SegmentoN_DarfSimples", "SegmentoW", "SegmentoZ"],
+            '06': ["SegmentoN_DarfNormal", "SegmentoW"],
+            '07': ["SegmentoN_DarfSimples", "SegmentoW"],
         })
         return segments
