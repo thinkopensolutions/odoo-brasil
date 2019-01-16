@@ -15,8 +15,7 @@ class PaymentMode(models.Model):
          ('04', 'Tributos com código de barras'),
          ('05', 'GPS - Guia de previdencia Social'),
          ('06', 'DARF Normal'),
-         ('07', 'DARF Simples'),
-         ('08', 'FGTS'),
+         ('08', 'FGTS com Código de Barras'),
          ('09', 'ICMS')],
         string="Tipo de Operação")
 
@@ -60,17 +59,18 @@ class PaymentMode(models.Model):
 
     numero_referencia = fields.Char('Número de Referência')
 
+    identificacao_fgts = fields.Char('Número de Identificação do FGTS')
+
+    cod_recolhimento = fields.Integer('Código de Recolhimento do FGTS')
+
+    conec_social_dv_fgts = fields.Integer("DV do conectividade Social")
+
+    conec_social_fgts = fields.Integer("Lacre do conectividade social")
+
     percentual_receita_bruta_acumulada = fields.Char(
         string='Percentual de Receita Bruta Acumulada',
         help='Percentual decorrente da receita bruta acumulada a ser aplicado\
         sobre a receita mensal.')
-
-    l10n_br_environment = fields.Selection(
-        [('test', 'Test'),
-         ('production', 'Production')],
-        string='Environment',
-        default='production'
-    )
 
     @api.constrains('type', 'journal_id', 'payment_type')
     def _check_payment_mode_payable(self):
@@ -79,14 +79,10 @@ class PaymentMode(models.Model):
                 continue
             if not rec.journal_id:
                 raise ValidationError('Para pagamentos o diário é obrigatório')
-            if rec.journal_id.bank_id.bic == '341':
-                if not (rec.payment_type == '01' or rec.payment_type == '02'):
-                    raise ValidationError(
-                        'Tipo de pagamento não implementado para o banco Itaú')
             if not rec.journal_id.bank_account_id:
                 raise ValidationError(
                     'Não existe conta bancária cadastrada no diário escolhido')
-            if not rec.journal_id.bank_account_id.codigo_convenio:
+            if not rec.journal_id.bank_account_id.l10n_br_convenio_pagamento:
                 raise ValidationError(
                     'Configure o código de convênio na conta bancária!')
             if not rec.journal_id.l10n_br_sequence_nosso_numero:

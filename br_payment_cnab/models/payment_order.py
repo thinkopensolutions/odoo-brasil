@@ -9,9 +9,9 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 try:
-    from ..bancos import santander, sicoob, itau
+    from ..bancos import santander, sicoob, itau, bradesco
 except ImportError:
-    _logger.debug('Cannot import bancos.')
+    _logger.error('Cannot import bancos', exc_info=True)
 
 
 class PaymentOrder(models.Model):
@@ -22,7 +22,7 @@ class PaymentOrder(models.Model):
             '756': sicoob.Sicoob240(self),
             '033': santander.Santander240(self),
             '341': itau.Itau240(self),
-            # '237': Bradesco240(self)
+            '237': bradesco.Bradesco240(self),
         }
         bank = banks.get(code)
         if not bank:
@@ -37,10 +37,6 @@ class PaymentOrder(models.Model):
         else:
             return '1'
 
-    def action_approve_all(self):
-        lines = self.line_ids.filtered(lambda x: x.state == 'draft')
-        lines.write({'state': 'approved'})
-
     def action_generate_payable_cnab(self):
         lines = self.line_ids.filtered(
             lambda x: x.state in ('approved', 'sent'))
@@ -54,18 +50,7 @@ class PaymentOrder(models.Model):
         cnab.create_cnab(lines)
         lines.write({'state': 'sent'})
         self.cnab_file = base64.b64encode(cnab.write_cnab())
-        self.name = self.env['ir.sequence'].next_by_code(
-            'payment.cnab.name')
-
-        remaining_lines = self.line_ids - lines
-        if remaining_lines:
-            new_order = self.copy({
-                'data_emissao_cnab': False, 'cnab_file': False,
-                'file_number': 0,
-                'name': self.env['ir.sequence'].next_by_code(
-                    'payment.order')
-            })
-            remaining_lines.write({'payment_order_id': new_order.id})
+        self.name = self._get_next_code()
 
 
 class PaymentOrderLine(models.Model):
@@ -78,12 +63,16 @@ class PaymentOrderLine(models.Model):
     linha_digitavel = fields.Char(string="Linha Digitável")
     barcode = fields.Char('Código de Barras')
     invoice_date = fields.Date('Data da Fatura')
-    cnab_code = fields.Char(string="Código Retorno")
-    cnab_message = fields.Char(string="Mensagem Retorno")
     value_final = fields.Float(
         string="Final Value", compute="_compute_final_value",
         digits=(18, 2), readonly=True)
 
+    autenticacao_pagamento = fields.Char(
+        string="Chave de Autenticação do pagamento")
+    protocolo_pagamento = fields.Char(string="Protocolo do Pagamento")
+
+    destiny_journal_id = fields.Many2one(
+        'account.journal', 'Diário p/ Transferência')
     bank_account_id = fields.Many2one(
         'res.partner.bank', string="Conta p/ Transferência")
 
@@ -125,7 +114,8 @@ class PaymentOrderLine(models.Model):
     def validate_bank_account(self, vals):
         errors = []
         if "bank_account_id" not in vals or not vals["bank_account_id"]:
-            errors += ['Selecione a conta bancária para transferência!']
+            errors += [
+                'Preencha a conta bancária para transferência no diário!']
             return errors
         bnk_account = self.env['res.partner.bank'].browse(
             vals["bank_account_id"])
@@ -151,6 +141,13 @@ class PaymentOrderLine(models.Model):
         errors = []
         errors += self.validate_partner_data(vals)
         errors += self.validate_bank_account(vals)
+        return errors
+
+    # ICMS
+    def validate_payment_type_09(self, payment_mode, vals):
+        errors = []
+        if not payment_mode.journal_id.company_id.inscr_est:
+            errors += ['Preencha a Inscrição Estadual da Empresa!']
         return errors
 
     # Pagamento de Títulos Bancários
@@ -212,7 +209,6 @@ class PaymentOrderLine(models.Model):
             return '700'
 
     def get_payment_order(self, payment_mode):
-        order_name = self.env['ir.sequence'].next_by_code('payment.order')
         payment_order = self.env['payment.order'].search([
             ('state', '=', 'draft'),
             ('src_bank_account_id', '=',
@@ -220,9 +216,9 @@ class PaymentOrderLine(models.Model):
             ('type', '=', 'payable')], limit=1)
         if not payment_order:
             payment_order = payment_order.sudo().create({
-                'name': order_name or '',
                 'user_id': self.env.user.id,
                 'payment_mode_id': payment_mode.id,
+                'journal_id': payment_mode.journal_id.id,
                 'src_bank_account_id':
                 payment_mode.journal_id.bank_account_id.id,
                 'state': 'draft',
@@ -238,6 +234,8 @@ class PaymentOrderLine(models.Model):
 
     def get_information_vals(self, payment_mode_id, vals):
         return {
+            'divida_ativa_etiqueta': vals.pop('divida_ativa_etiqueta', False),
+            'numero_parcela_icms': vals.pop('numero_parcela_icms', False),
             'payment_type': payment_mode_id.payment_type,
             'mov_finality': payment_mode_id.mov_finality,
             'operation_code': self.get_operation_code(payment_mode_id),
@@ -246,7 +244,11 @@ class PaymentOrderLine(models.Model):
             'fine_value': vals.get('fine_value'),
             'interest_value': vals.get('interest_value'),
             'numero_referencia': payment_mode_id.numero_referencia,
-            'l10n_br_environment': payment_mode_id.l10n_br_environment
+            'cod_recolhimento_fgts': payment_mode_id.cod_recolhimento,
+            'identificacao_fgts': payment_mode_id.identificacao_fgts,
+            'l10n_br_environment': payment_mode_id.l10n_br_environment,
+            'conec_social_dv_fgts': payment_mode_id.conec_social_dv_fgts,
+            'conec_social_fgts': payment_mode_id.conec_social_fgts,
         }
 
     def action_generate_payment_order_line(self, payment_mode, vals):
@@ -268,8 +270,11 @@ class PaymentOrderLine(models.Model):
         }
         line_vals.update(vals)
         order_line = self.sudo().create(line_vals)
-        move_line = self.env['account.move.line'].browse(vals['move_line_id'])
-        move_line.write({'l10n_br_order_line_id': order_line.id})
+        if "move_line_id" in vals:
+            move_line = self.env['account.move.line'].browse(
+                vals['move_line_id'])
+            move_line.write({'l10n_br_order_line_id': order_line.id})
+        return order_line
 
     def action_aprove_payment_line(self):
         for item in self:
@@ -295,6 +300,13 @@ class PaymentOrderLine(models.Model):
         })
         aml_obj = self.env['account.move.line'].with_context(
             check_move_validity=False)
+
+        account_id = None
+        if not order_line.move_line_id:   # Transferência
+            account_id = order_line.destiny_journal_id.default_debit_account_id
+        else:
+            account_id = order_line.move_line_id.account_id
+
         counterpart_aml_dict = {
             'name': order_line.name,
             'move_id': move.id,
@@ -302,7 +314,7 @@ class PaymentOrderLine(models.Model):
             'debit': order_line.amount_total,
             'credit': 0.0,
             'currency_id': order_line.currency_id.id,
-            'account_id': order_line.move_line_id.account_id.id,
+            'account_id': account_id.id,
         }
         liquidity_aml_dict = {
             'name': order_line.name,
@@ -311,7 +323,7 @@ class PaymentOrderLine(models.Model):
             'debit': 0.0,
             'credit': order_line.amount_total,
             'currency_id': order_line.currency_id.id,
-            'account_id': order_line.journal_id.default_debit_account_id.id,
+            'account_id': order_line.journal_id.default_credit_account_id.id,
         }
         counterpart_aml = aml_obj.create(counterpart_aml_dict)
         aml_obj.create(liquidity_aml_dict)
@@ -319,22 +331,19 @@ class PaymentOrderLine(models.Model):
         (counterpart_aml + order_line.move_line_id).reconcile()
         return move
 
-    def mark_order_line_processed(self, cnab_code, cnab_message,
-                                  rejected=False, statement_id=None):
+    def mark_order_line_processed(self, cnab_code, cnab_message, statement_id,
+                                  rejected=False):
         state = 'processed'
         if rejected:
             state = 'rejected'
-
+        if self.state in ('rejected', 'paid', 'cancelled'):
+            cnab_message = 'Registro já processado anteriormente'
+            state = self.state
+            cnab_code = '00'
         self.write({
             'state': state, 'cnab_code': cnab_code,
             'cnab_message': cnab_message
         })
-        if not statement_id:
-            statement_id = self.env['l10n_br.payment.statement'].create({
-                'name': '0001/Manual',
-                'date': date.today(),
-                'state': 'validated',
-            })
         for item in self:
             self.env['l10n_br.payment.statement.line'].create({
                 'statement_id': statement_id.id,
@@ -347,35 +356,26 @@ class PaymentOrderLine(models.Model):
             })
         return statement_id
 
-    def mark_order_line_paid(self, cnab_code, cnab_message, statement_id=None):
-        bank_account_ids = self.mapped('src_bank_account_id')
-        for account in bank_account_ids:
-            order_lines = self.filtered(
-                lambda x: x.src_bank_account_id == account)
-            journal_id = self.env['account.journal'].search(
-                [('bank_account_id', '=', account.id)], limit=1)
-
-            if not statement_id:
-                statement_id = self.env['l10n_br.payment.statement'].create({
-                    'name':
-                    journal_id.l10n_br_sequence_statements.next_by_id(),
-                    'date': date.today(),
-                    'state': 'validated',
-                    'journal_id': journal_id.id,
-                })
-            for item in order_lines:
-                move_id = self.create_move_and_reconcile(item)
-                self.env['l10n_br.payment.statement.line'].create({
-                    'statement_id': statement_id.id,
-                    'date': date.today(),
-                    'name': item.name,
-                    'partner_id': item.partner_id.id,
-                    'amount': item.value_final,
-                    'move_id': move_id.id,
-                    'cnab_code': cnab_code,
-                    'cnab_message': cnab_message,
-                })
-            order_lines.write({'state': 'paid'})
+    def mark_order_line_paid(self, cnab_code, cnab_message, statement_id,
+                             autenticacao=None, protocolo=None):
+        for line in self:
+            move_id = self.create_move_and_reconcile(line)
+            line.write({
+                'autenticacao_pagamento': autenticacao,
+                'protocolo_pagamento': protocolo,
+                'cnab_code': cnab_code,
+                'cnab_message': cnab_message})
+            self.env['l10n_br.payment.statement.line'].create({
+                'statement_id': statement_id.id,
+                'date': date.today(),
+                'name': line.name,
+                'partner_id': line.partner_id.id,
+                'amount': line.value_final,
+                'move_id': move_id.id,
+                'cnab_code': cnab_code,
+                'cnab_message': cnab_message,
+            })
+        self.write({'state': 'paid'})
         return statement_id
 
     def action_view_more_info(self):
